@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>我的 YT Music 排行榜</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  --bg: #F1F3EF;
+  --ink: #17302B;
+  --muted: #5D6F69;
+  --line: #D8DED9;
+  --accent: #D0245E;
+  --accent-ink: #FFFFFF;
+  --danger: #B3173F;
+  --serif: "Noto Serif TC", "Songti TC", "PMingLiU", serif;
+  --sans: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1F1C;
+    --ink: #EAF1EC;
+    --muted: #93A8A0;
+    --line: #233A34;
+    --accent: #FF7FA6;
+    --accent-ink: #0F1F1C;
+    --danger: #FF9DB5;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1F1C;
+  --ink: #EAF1EC;
+  --muted: #93A8A0;
+  --line: #233A34;
+  --accent: #FF7FA6;
+  --accent-ink: #0F1F1C;
+  --danger: #FF9DB5;
+}
+*, *::before, *::after { box-sizing: inherit; }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  line-height: 1.7;
+  -webkit-text-size-adjust: 100%;
+}
+main { max-width: 720px; margin: 0 auto; padding: 72px 24px 120px; }
+button, select, input { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+/* landing */
+h1 {
+  font-family: var(--serif);
+  font-weight: 900;
+  font-size: clamp(2.4rem, 9vw, 4.2rem);
+  line-height: 1.2;
+  margin: 0 0 24px;
+}
+.lede { font-size: 1.1rem; color: var(--muted); margin: 0 0 48px; max-width: 28em; }
+.strip { display: flex; gap: 12px; margin: 0 0 56px; }
+.strip .cover { width: 100%; max-width: 96px; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; }
+.primary {
+  background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 10px;
+  padding: 15px 28px; font-weight: 700; cursor: pointer;
+}
+.primary:hover { filter: brightness(1.08); }
+.linkbtn {
+  background: none; border: 0; padding: 4px 0; color: var(--ink); cursor: pointer;
+  text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 6px; text-decoration-thickness: 2px;
+}
+.linkbtn:hover { text-decoration-color: var(--accent); }
+.hint { color: var(--muted); font-size: .92rem; margin: 20px 0 0; }
+.help { margin-top: 64px; }
+.help summary { cursor: pointer; font-weight: 500; }
+.help ol { margin: 20px 0 0; padding-left: 1.4em; color: var(--muted); }
+.help li { margin-bottom: 10px; }
+code { font-size: .9em; background: var(--line); padding: 2px 7px; border-radius: 5px; }
+.error { color: var(--danger); font-weight: 500; margin: 0 0 32px; }
+
+/* result */
+#result { display: none; }
+body.loaded #result { display: block; }
+body.loaded #landing { display: none; }
+body.loaded main { padding-top: 40px; }
+.topbar { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin-bottom: 40px; }
+.topbar h2 { font-family: var(--serif); font-weight: 700; font-size: 1.05rem; margin: 0; }
+.summary { color: var(--muted); margin: 0 0 40px; max-width: 34em; }
+
+.hero {
+  display: grid; grid-template-columns: 1fr 200px; gap: 32px; align-items: center;
+  border-radius: 20px; padding: 44px 44px 44px 48px; margin-bottom: 64px;
+}
+.hero-rank { margin: 0 0 16px; font-size: .95rem; opacity: .85; }
+.hero-title {
+  font-family: var(--serif); font-weight: 900; font-size: clamp(1.7rem, 5vw, 2.5rem);
+  line-height: 1.3; margin: 0 0 8px; overflow-wrap: anywhere;
+}
+.hero-title a { color: inherit; text-decoration: none; }
+.hero-title a:hover { text-decoration: underline; text-underline-offset: 6px; }
+.hero-sub { margin: 0 0 32px; opacity: .85; overflow-wrap: anywhere; }
+.hero-count { margin: 0; }
+.hero-count b { font-family: var(--serif); font-weight: 900; font-size: 3rem; line-height: 1; margin-right: 6px; }
+.hero-art svg { display: block; width: 100%; height: auto; }
+
+.controls { margin-bottom: 8px; }
+.tabs { display: flex; align-items: center; gap: 32px; margin-bottom: 28px; }
+.tabs button {
+  background: none; border: 0; border-bottom: 3px solid transparent; padding: 6px 0; cursor: pointer;
+  color: var(--muted); font-family: var(--serif); font-weight: 700; font-size: 1.25rem;
+}
+.tabs button[aria-pressed="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.tabs select {
+  margin-left: auto; background: transparent; border: 0; border-bottom: 2px solid var(--line);
+  padding: 6px 4px; color: var(--ink); cursor: pointer; border-radius: 0;
+}
+.tabs select option { color: #17302B; background: #FFFFFF; }
+.search {
+  width: 100%; background: transparent; border: 0; border-bottom: 2px solid var(--line);
+  padding: 12px 2px; border-radius: 0;
+}
+.search::placeholder { color: var(--muted); }
+.search:focus { border-bottom-color: var(--accent); outline: none; }
+.check { display: inline-flex; gap: 10px; align-items: center; color: var(--muted); font-size: .92rem; margin-top: 20px; }
+.check input { accent-color: var(--accent); width: 16px; height: 16px; }
+
+ol.chart { list-style: none; margin: 24px 0 0; padding: 0; }
+.item {
+  display: grid; grid-template-columns: 2.2rem 64px 1fr auto; gap: 20px; align-items: center;
+  padding: 22px 0; border-bottom: 1px solid var(--line);
+}
+.rank { font-family: var(--serif); font-weight: 700; font-size: 1.15rem; color: var(--muted); text-align: right; }
+.item .cover { width: 64px; height: 64px; }
+.name { min-width: 0; }
+.name a, .name .t { display: block; font-weight: 700; color: inherit; text-decoration: none; overflow-wrap: anywhere; line-height: 1.5; }
+.name a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.name .s { display: block; color: var(--muted); font-size: .9rem; margin-top: 2px; overflow-wrap: anywhere; }
+.count { font-family: var(--serif); font-weight: 700; font-size: 1.4rem; text-align: right; white-space: nowrap; }
+.count small { font-family: var(--sans); font-weight: 400; font-size: .8rem; color: var(--muted); margin-left: 3px; }
+.empty { color: var(--muted); padding: 40px 0; }
+.more { margin-top: 40px; text-align: center; }
+.more button {
+  background: none; border: 2px solid var(--line); border-radius: 10px; padding: 12px 28px; cursor: pointer;
+}
+.more button:hover { border-color: var(--accent); }
+.cover { display: block; border-radius: 12px; overflow: hidden; flex: none; }
+.cover svg { display: block; width: 100%; height: 100%; }
+
+.overlay {
+  position: fixed; inset: 0; z-index: 10; display: none; align-items: center; justify-content: center;
+  background: var(--bg); opacity: .96; font-family: var(--serif); font-weight: 700; font-size: 1.6rem;
+  border: 3px dashed var(--accent); margin: 16px; border-radius: 20px;
+}
+.overlay.on { display: flex; }
+
+@media (max-width: 560px) {
+  main { padding: 48px 20px 96px; }
+  .hero { grid-template-columns: 1fr; padding: 32px 28px; gap: 24px; }
+  .hero-art { order: -1; width: 120px; }
+  .item { grid-template-columns: 1.6rem 52px 1fr auto; gap: 14px; padding: 18px 0; }
+  .item .cover { width: 52px; height: 52px; }
+  .count { font-size: 1.2rem; }
+  .tabs { gap: 24px; }
+}
+</style>
+</head>
+<body>
+<main>
+  <p class="error" id="error" role="alert" hidden></p>
+  <input type="file" id="file" accept=".json,application/json" hidden>
+
+  <section id="landing">
+    <h1>我的 YT Music<br>排行榜</h1>
+    <p class="lede">上傳 Google Takeout 匯出的收聽紀錄，看看你聽最多次的歌和歌手。</p>
+    <div class="strip" id="strip" aria-hidden="true"></div>
+    <div class="actions">
+      <button class="primary" id="pick" type="button">選擇 watch-history.json</button>
+      <button class="linkbtn" id="demo" type="button">先用範例資料看看</button>
+    </div>
+    <p class="hint">也可以直接把檔案拖進這個頁面。檔案只在你的瀏覽器裡處理，不會上傳。</p>
+
+    <details class="help">
+      <summary>怎麼取得這個檔案？</summary>
+      <ol>
+        <li>開啟 <code>takeout.google.com</code>，先取消全選。</li>
+        <li>只勾選「YouTube 和 YouTube Music」。</li>
+        <li>在「所有 YouTube 資料」中只選「記錄」，格式選 JSON。</li>
+        <li>下載後解壓縮，找到 <code>watch-history.json</code>。</li>
+      </ol>
+    </details>
+  </section>
+
+  <section id="result" aria-live="polite">
+    <div class="topbar">
+      <h2>我的 YT Music 排行榜</h2>
+      <button class="linkbtn" id="swap" type="button">換檔案</button>
+    </div>
+    <p class="summary" id="summary"></p>
+
+    <div id="hero"></div>
+
+    <div class="controls">
+      <div class="tabs">
+        <button type="button" data-tab="songs" aria-pressed="true">歌曲</button>
+        <button type="button" data-tab="artists" aria-pressed="false">歌手</button>
+        <select id="range" aria-label="時間範圍"></select>
+      </div>
+      <input class="search" type="search" id="q" placeholder="搜尋歌名或歌手" aria-label="搜尋">
+      <label class="check" id="mergeWrap"><input type="checkbox" id="merge" checked> 合併同名同歌手的版本（MV、音源）</label>
+    </div>
+
+    <ol class="chart" id="chart"></ol>
+    <div class="more" id="more" hidden><button type="button" id="moreBtn">顯示更多</button></div>
+  </section>
+</main>
+<div class="overlay" id="overlay">放開以載入檔案</div>
+
+<script>
+(function () {
+  var PREFIX = /^(Watched|Listened to|已觀看|已观看|已收聽|已收听|已聆聽)\s*/i;
+  var state = { entries: [], tab: 'songs', range: 'all', q: '', limit: 50, merge: true };
+
+  var PALS = [
+    { bg: '#D0245E', fg: '#FFD6E3', ac: '#17302B', tx: '#FFFFFF' },
+    { bg: '#F2B632', fg: '#17302B', ac: '#FFF3CF', tx: '#17302B' },
+    { bg: '#1A7A6B', fg: '#E6F5F0', ac: '#F2B632', tx: '#FFFFFF' },
+    { bg: '#17302B', fg: '#F2B632', ac: '#E8557F', tx: '#FFFFFF' },
+    { bg: '#8FC3E8', fg: '#17302B', ac: '#FFFFFF', tx: '#17302B' },
+    { bg: '#B9A6E8', fg: '#17302B', ac: '#F2B632', tx: '#17302B' }
+  ];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var fmt = function (n) { return n.toLocaleString('zh-TW'); };
+  var NS = 'http://www.w3.org/2000/svg';
+
+  function hash(s) {
+    var h = 2166136261;
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  }
+  function svgEl(name, attrs, parent) {
+    var e = document.createElementNS(NS, name);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function artRaw(pal, pat, noBg) {
+    var s = svgEl('svg', { viewBox: '0 0 100 100', 'aria-hidden': 'true' });
+    if (!noBg) svgEl('rect', { width: 100, height: 100, fill: pal.bg }, s);
+    switch (pat) {
+      case 0:
+        svgEl('circle', { cx: 50, cy: 52, r: 32, fill: pal.fg }, s);
+        svgEl('circle', { cx: 78, cy: 24, r: 10, fill: pal.ac }, s);
+        break;
+      case 1:
+        svgEl('rect', { x: 0, y: 0, width: 50, height: 100, fill: pal.fg }, s);
+        svgEl('circle', { cx: 50, cy: 50, r: 22, fill: pal.ac }, s);
+        break;
+      case 2:
+        [10, 30, 50, 70].forEach(function (y) { svgEl('rect', { x: 0, y: y, width: 100, height: 12, fill: pal.fg }, s); });
+        svgEl('circle', { cx: 70, cy: 50, r: 17, fill: pal.ac }, s);
+        break;
+      case 3:
+        svgEl('path', { d: 'M0 100 L0 20 A80 80 0 0 1 80 100 Z', fill: pal.fg }, s);
+        svgEl('circle', { cx: 72, cy: 28, r: 12, fill: pal.ac }, s);
+        break;
+      case 4:
+        [25, 50, 75].forEach(function (x) {
+          [25, 50, 75].forEach(function (y) {
+            var mid = x === 50 && y === 50;
+            svgEl('circle', { cx: x, cy: y, r: mid ? 12 : 8, fill: mid ? pal.ac : pal.fg }, s);
+          });
+        });
+        break;
+      default:
+        svgEl('polygon', { points: '50,12 90,84 10,84', fill: pal.fg }, s);
+        svgEl('circle', { cx: 50, cy: 64, r: 12, fill: pal.ac }, s);
+    }
+    return s;
+  }
+  function palOf(key) { return PALS[hash(key) % PALS.length]; }
+  function patOf(key) { return (hash(key) >>> 8) % 6; }
+  function cover(key) {
+    var d = document.createElement('div');
+    d.className = 'cover';
+    d.appendChild(artRaw(palOf(key), patOf(key), false));
+    return d;
+  }
+
+  function showError(msg) {
+    var el = $('error');
+    el.textContent = msg || '';
+    el.hidden = !msg;
+  }
+
+  function parseHistory(data) {
+    var out = [];
+    for (var i = 0; i < data.length; i++) {
+      var it = data[i] || {};
+      var url = it.titleUrl || '';
+      var isMusic = it.header === 'YouTube Music' || url.indexOf('music.youtube.com') !== -1;
+      if (!isMusic) continue;
+      var m = url.match(/[?&]v=([\w-]{6,})/);
+      var t = Date.parse(it.time);
+      if (!m || isNaN(t)) continue;
+      var title = String(it.title || '').replace(PREFIX, '').trim() || m[1];
+      var artist = '未知歌手';
+      if (it.subtitles && it.subtitles[0] && it.subtitles[0].name) {
+        artist = String(it.subtitles[0].name).replace(/\s*-\s*Topic$/i, '').trim() || artist;
+      }
+      out.push({ id: m[1], title: title, artist: artist, t: t });
+    }
+    return out;
+  }
+
+  function loadEntries(entries) {
+    state.entries = entries;
+    state.range = 'all';
+    state.q = '';
+    $('q').value = '';
+    state.limit = 50;
+    buildRangeOptions();
+    document.body.classList.add('loaded');
+    window.scrollTo(0, 0);
+    showError('');
+    render();
+  }
+
+  function handleText(text) {
+    var data;
+    try { data = JSON.parse(text); } catch (e) {
+      showError('這不是有效的 JSON 檔。匯出時請把格式選成 JSON，不是 HTML。');
+      return;
+    }
+    if (!Array.isArray(data)) {
+      showError('檔案格式不符。請選擇 Takeout 裡的 watch-history.json。');
+      return;
+    }
+    var entries = parseHistory(data);
+    if (!entries.length) {
+      showError('找不到 YouTube Music 的播放紀錄。請確認匯出時有勾選「YouTube 和 YouTube Music」，並選擇 watch-history.json。');
+      return;
+    }
+    loadEntries(entries);
+  }
+
+  function handleFile(file) {
+    if (!file) return;
+    showError('');
+    var reader = new FileReader();
+    reader.onload = function () { handleText(String(reader.result)); };
+    reader.onerror = function () { showError('讀取檔案失敗，請再試一次。'); };
+    reader.readAsText(file);
+  }
+
+  function buildRangeOptions() {
+    var sel = $('range');
+    sel.textContent = '';
+    var years = {};
+    state.entries.forEach(function (e) { years[new Date(e.t).getFullYear()] = 1; });
+    var opts = [['all', '全部時間'], ['d:30', '最近 30 天'], ['d:365', '最近 12 個月']];
+    Object.keys(years).sort(function (a, b) { return b - a; }).forEach(function (y) {
+      opts.push(['y:' + y, y + ' 年']);
+    });
+    opts.forEach(function (o) {
+      var op = document.createElement('option');
+      op.value = o[0]; op.textContent = o[1];
+      sel.appendChild(op);
+    });
+    sel.value = state.range;
+  }
+
+  function inRange(list) {
+    var r = state.range;
+    if (r.indexOf('y:') === 0) {
+      var y = +r.slice(2);
+      return list.filter(function (e) { return new Date(e.t).getFullYear() === y; });
+    }
+    if (r.indexOf('d:') === 0) {
+      var cut = Date.now() - (+r.slice(2)) * 864e5;
+      return list.filter(function (e) { return e.t >= cut; });
+    }
+    return list;
+  }
+
+  function compute() {
+    var list = inRange(state.entries);
+    var map = new Map();
+    var songSet = new Set(), artistSet = new Set();
+    var minT = Infinity, maxT = 0;
+    var asArtist = state.tab === 'artists';
+    list.forEach(function (e) {
+      var sKey = (e.title + '\u0000' + e.artist).toLowerCase();
+      songSet.add(sKey);
+      artistSet.add(e.artist.toLowerCase());
+      if (e.t < minT) minT = e.t;
+      if (e.t > maxT) maxT = e.t;
+      var key = asArtist ? e.artist.toLowerCase() : (state.merge ? sKey : e.id);
+      var g = map.get(key);
+      if (!g) {
+        g = {
+          title: asArtist ? e.artist : e.title, sub: e.artist, id: e.id, demo: !!e.demo,
+          ck: asArtist ? e.artist : e.title + '|' + e.artist,
+          n: 0, last: 0, songs: new Set()
+        };
+        map.set(key, g);
+      }
+      g.n++;
+      g.songs.add(sKey);
+      if (e.t > g.last) { g.last = e.t; g.id = e.id; }
+    });
+    var rows = Array.from(map.values()).sort(function (a, b) { return b.n - a.n || b.last - a.last; });
+    rows.forEach(function (r, i) {
+      r.rank = i + 1;
+      if (asArtist) r.sub = r.songs.size + ' 首不同的歌';
+    });
+    return { rows: rows, total: list.length, songs: songSet.size, artists: artistSet.size, minT: minT, maxT: maxT };
+  }
+
+  function titleNode(r, cls) {
+    var canLink = state.tab === 'songs' && !r.demo && /^[\w-]{6,}$/.test(r.id);
+    var t;
+    if (canLink) {
+      t = document.createElement('a');
+      t.href = 'https://music.youtube.com/watch?v=' + encodeURIComponent(r.id);
+      t.target = '_blank';
+      t.rel = 'noopener noreferrer';
+    } else {
+      t = document.createElement('span');
+      if (cls) t.className = cls;
+    }
+    t.textContent = r.title;
+    return t;
+  }
+
+  function renderHero(r) {
+    var host = $('hero');
+    host.textContent = '';
+    if (!r) return;
+    var pal = palOf(r.ck);
+    var box = document.createElement('div');
+    box.className = 'hero';
+    box.style.background = pal.bg;
+    box.style.color = pal.tx;
+
+    var text = document.createElement('div');
+    var rk = document.createElement('p');
+    rk.className = 'hero-rank';
+    rk.textContent = state.tab === 'songs' ? '聽最多次的歌' : '聽最多次的歌手';
+    text.appendChild(rk);
+
+    var h = document.createElement('h3');
+    h.className = 'hero-title';
+    h.appendChild(titleNode(r));
+    text.appendChild(h);
+
+    var sub = document.createElement('p');
+    sub.className = 'hero-sub';
+    sub.textContent = r.sub;
+    text.appendChild(sub);
+
+    var ct = document.createElement('p');
+    ct.className = 'hero-count';
+    var b = document.createElement('b');
+    b.textContent = fmt(r.n);
+    ct.appendChild(b);
+    ct.appendChild(document.createTextNode('次播放'));
+    text.appendChild(ct);
+
+    var art = document.createElement('div');
+    art.className = 'hero-art';
+    art.appendChild(artRaw(pal, patOf(r.ck), true));
+
+    box.appendChild(text);
+    box.appendChild(art);
+    host.appendChild(box);
+  }
+
+  function render() {
+    var c = compute();
+    var s = $('summary');
+    if (c.total) {
+      var d1 = new Date(c.minT).toLocaleDateString('zh-TW'), d2 = new Date(c.maxT).toLocaleDateString('zh-TW');
+      s.textContent = '這段期間共播放 ' + fmt(c.total) + ' 次，涵蓋 ' + fmt(c.songs) + ' 首歌、' + fmt(c.artists) + ' 位歌手，時間從 ' + d1 + ' 到 ' + d2 + '。';
+    } else {
+      s.textContent = '這段時間沒有播放紀錄。';
+    }
+
+    $('mergeWrap').style.display = state.tab === 'songs' ? '' : 'none';
+
+    var q = state.q.trim().toLowerCase();
+    var showHero = !q && c.rows.length > 0;
+    renderHero(showHero ? c.rows[0] : null);
+
+    var rows = q ? c.rows.filter(function (r) {
+      return r.title.toLowerCase().indexOf(q) !== -1 || r.sub.toLowerCase().indexOf(q) !== -1;
+    }) : c.rows.slice(1);
+
+    var ol = $('chart');
+    ol.textContent = '';
+    if (!rows.length && (q || !showHero)) {
+      var li0 = document.createElement('li');
+      li0.className = 'empty';
+      li0.textContent = q ? '沒有符合「' + state.q + '」的結果。' : '沒有資料。';
+      ol.appendChild(li0);
+    }
+    rows.slice(0, state.limit).forEach(function (r) {
+      var li = document.createElement('li');
+      li.className = 'item';
+
+      var rk = document.createElement('div');
+      rk.className = 'rank';
+      rk.textContent = r.rank;
+      li.appendChild(rk);
+
+      li.appendChild(cover(r.ck));
+
+      var nm = document.createElement('div');
+      nm.className = 'name';
+      nm.appendChild(titleNode(r, 't'));
+      var sub = document.createElement('span');
+      sub.className = 's';
+      sub.textContent = r.sub;
+      nm.appendChild(sub);
+      li.appendChild(nm);
+
+      var ct = document.createElement('div');
+      ct.className = 'count';
+      ct.textContent = fmt(r.n);
+      var sm = document.createElement('small');
+      sm.textContent = '次';
+      ct.appendChild(sm);
+      li.appendChild(ct);
+
+      ol.appendChild(li);
+    });
+    $('more').hidden = rows.length <= state.limit;
+  }
+
+  function demoData() {
+    var titles = ['夜間航班', '海邊的信', 'Paper Lanterns', '第四個季節', 'Slow Static', '雨後的街', 'Northern Lights Drive',
+      '慢速列車', 'Cold Coffee', '未寄出的明信片', 'Glass Houses', '午夜便利店', 'Low Tide', '返程', 'Afterimage',
+      '紙飛機', 'Tidal', '舊公寓', 'Signal Fires', '晴天預報'];
+    var artists = ['示範樂團 A', '示範歌手 B', '示範樂團 C', '示範歌手 D', '示範樂團 E'];
+    var out = [];
+    var now = Date.now();
+    var seed = 7;
+    function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+    for (var i = 0; i < 900; i++) {
+      var idx = Math.floor(Math.pow(rnd(), 2.2) * titles.length);
+      out.push({
+        id: 'demo' + idx, title: titles[idx], artist: artists[idx % artists.length],
+        t: now - Math.floor(rnd() * 700) * 864e5, demo: true
+      });
+    }
+    return out;
+  }
+
+  // landing strip
+  (function () {
+    var strip = $('strip');
+    for (var i = 0; i < 6; i++) {
+      var d = document.createElement('div');
+      d.className = 'cover';
+      d.appendChild(artRaw(PALS[i], (i * 5 + 2) % 6, false));
+      strip.appendChild(d);
+    }
+  })();
+
+  // events
+  $('pick').addEventListener('click', function () { $('file').click(); });
+  $('swap').addEventListener('click', function () { $('file').click(); });
+  $('file').addEventListener('change', function (e) { handleFile(e.target.files[0]); e.target.value = ''; });
+  $('demo').addEventListener('click', function () { loadEntries(demoData()); });
+
+  var dragDepth = 0;
+  window.addEventListener('dragenter', function (e) { e.preventDefault(); dragDepth++; $('overlay').classList.add('on'); });
+  window.addEventListener('dragover', function (e) { e.preventDefault(); });
+  window.addEventListener('dragleave', function (e) {
+    e.preventDefault();
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (!dragDepth) $('overlay').classList.remove('on');
+  });
+  window.addEventListener('drop', function (e) {
+    e.preventDefault();
+    dragDepth = 0;
+    $('overlay').classList.remove('on');
+    var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    handleFile(f);
+  });
+
+  document.querySelectorAll('.tabs button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      state.tab = btn.getAttribute('data-tab');
+      state.limit = 50;
+      document.querySelectorAll('.tabs button').forEach(function (b) {
+        b.setAttribute('aria-pressed', String(b === btn));
+      });
+      render();
+    });
+  });
+  $('range').addEventListener('change', function (e) { state.range = e.target.value; state.limit = 50; render(); });
+  $('q').addEventListener('input', function (e) { state.q = e.target.value; state.limit = 50; render(); });
+  $('merge').addEventListener('change', function (e) { state.merge = e.target.checked; render(); });
+  $('moreBtn').addEventListener('click', function () { state.limit += 50; render(); });
+})();
+</script>
+</body>
+</html>
